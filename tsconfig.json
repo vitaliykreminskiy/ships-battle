@@ -22,5 +22,10 @@
   },
   "include": [
     "src"
-  ]
+  ],
+  "eslintConfig": {
+    "rules": {
+      "no-unused-vars": "off"
+    }
+  }
 }
