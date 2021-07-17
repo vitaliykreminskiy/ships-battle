@@ -40,12 +40,13 @@ export const drawShip = (
   x: number, 
   y: number, 
   boxes: number = 1, 
-  vertical: boolean = false
+  vertical: boolean = false,
+  strokeColor: string = '#2bb1ff'
 ) => {
   //! Logic of drawing may strongly depend on placement (horizontal/vertical)
   if (!vertical && boxes > 0) {
     for (let i = 0; i < boxes; i++) {
-      p5.stroke(43, 177, 255)
+      p5.stroke(strokeColor)
       .noFill()
       .rect(x + (CELL_DIMENSION * i), y, CELL_DIMENSION, CELL_DIMENSION)
     }

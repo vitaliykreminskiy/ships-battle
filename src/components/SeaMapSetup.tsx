@@ -17,6 +17,12 @@ type ShipsCounts = {
   fourths: number
 }
 
+type ShipGhost = {
+  boxesCount: number,
+  xCoord: number,
+  yCoord: number
+}
+
 const {
   FRAME_RATE,
   CELL_DIMENSION,
@@ -38,7 +44,8 @@ const SeaMapSetup = () => {
     doubles: 3,
     triples: 2,
     fourths: 1
-  })
+  }) 
+  const [shipGhost, setShipGhost] = useState<ShipGhost | false>(false)
 
   const horizontalSpacingPx = 40
   const verticalSpacingPx = 40
@@ -50,8 +57,70 @@ const SeaMapSetup = () => {
   const shipsCountsXCoord = 
     shipsListXCoord + (CELL_DIMENSION * 4) + (horizontalSpacingPx * 2)
 
+  /**
+   * @note Ship ghost is a special visual entity which appears when you perform the 
+   * drag
+   */
+  const addShipGhost = (p5: p5types, boxesCount: number): void => {
+    const { mouseX, mouseY } = p5
+
+    setShipGhost({
+      boxesCount: boxesCount,
+      xCoord: mouseX,
+      yCoord: mouseY
+    })
+  }
+
+  /**
+   * Identifies whether the user cliked on the draggable entity
+   * 
+   * @param p5 - p5 drawing object
+   * @returns false if not or number of boxes of the ship which the user clicked 
+   * at
+   */
+  const identifyDraggableEntity = (p5: p5types): false | number => {
+    const { mouseX, mouseY } = p5
+    const maxShipBoxesCount = 4
+
+    //TODO: Add also determining click on the SeaMap
+    // That means that we've clicked somewhere into ShipsList area
+    if (mouseX > shipsListXCoord && mouseY > CELL_DIMENSION) {
+      for (let i = 0; i <= maxShipBoxesCount; i++) {
+        const elementStartYCoord = 
+          CELL_DIMENSION + (CELL_DIMENSION * i) + (verticalSpacingPx * i)
+        const elementEndYCoord = elementStartYCoord + CELL_DIMENSION
+        const elementEndXCoord = 
+          shipsListXCoord + (CELL_DIMENSION * (maxShipBoxesCount - i))
+        if (mouseY >= elementStartYCoord && mouseY <= elementEndYCoord &&
+          mouseX <= elementEndXCoord) {
+          return maxShipBoxesCount - i
+        }
+      }
+    }
+
+    return false
+  } 
+
+  const handleMousePressed = (p5: p5types): void => {
+    const targetDraggableEntity = identifyDraggableEntity(p5)
+
+    if (!targetDraggableEntity) {
+      return
+    }
+
+    addShipGhost(p5, targetDraggableEntity)
+  }
+
+  const handleMouseReleased = (p5: p5types): void => {
+    setShipGhost(false)
+  }
+
   const handleMouseDrag = (p5: p5types) => {
-    console.log(p5.mouseX)
+    if (!shipGhost) {
+      return
+    }
+
+    addShipGhost(p5, shipGhost.boxesCount)
   }
 
   const setup = ((p5: p5types, canvasParentRef: Element) => {
@@ -59,8 +128,10 @@ const SeaMapSetup = () => {
     // We need to add this single pixel to make all line have the same weight
     p5.createCanvas((mapWidth * 2) + 1, mapHeight + 1)
       .parent(canvasParentRef)
+  })
 
-    p5.background(255)
+  const draw = (p5: p5types) => {
+    p5.background('#FFF')
 
     drawSeaMap(p5)
 
@@ -73,9 +144,6 @@ const SeaMapSetup = () => {
       CELL_DIMENSION * (MAP_DIMENSION + 1)
     )
     p5.stroke(43, 177, 255)
-  })
-
-  const draw = (p5: p5types) => {
     // Available to place ships and theirs counts
     drawShip(p5, shipsListXCoord, CELL_DIMENSION, 4)
     drawShip(p5, shipsListXCoord, (CELL_DIMENSION * 2) + verticalSpacingPx, 3)
@@ -115,11 +183,22 @@ const SeaMapSetup = () => {
         shipsCountsXCoord, 
         (CELL_DIMENSION * 5) + (verticalSpacingPx * 3) - (CELL_DIMENSION / 3)
       )
+
+    if (shipGhost) {
+      const { xCoord, yCoord, boxesCount } = shipGhost
+      drawShip(p5, xCoord, yCoord, boxesCount, false, '#f45cff')
+    }
   };
 
   return (
     <div className={classes.seaMap}>
-      <Sketch setup={setup} draw={draw} mouseDragged={handleMouseDrag}/>
+      <Sketch 
+        setup={setup} 
+        draw={draw} 
+        mouseDragged={handleMouseDrag}
+        mousePressed={handleMousePressed}
+        mouseReleased={handleMouseReleased}
+      />
     </div>
   )
 }
