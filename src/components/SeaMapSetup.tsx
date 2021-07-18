@@ -9,25 +9,32 @@ import {
 
 import { drawSeaMap, drawShip } from '../utils/drawing'
 import CONFIG from '../config/app'
-
-type ShipsCounts = {
-  singles: number, 
-  doubles: number,
-  triples: number,
-  fourths: number
-}
-
-type ShipGhost = {
-  boxesCount: number,
-  xCoord: number,
-  yCoord: number
-}
+import { 
+  SeaMapType, 
+  ShipGhost, 
+  ShipsCounts 
+} from '../types'
 
 const {
   FRAME_RATE,
   CELL_DIMENSION,
   MAP_DIMENSION
 } = CONFIG.DRAWING
+
+const getInitialSeaMapAsArray = (): SeaMapType => {
+  let seaMap = []
+  
+  for (let i = 0; i < MAP_DIMENSION; i++) {
+    const row = []
+    for (let j = 0; j < MAP_DIMENSION; j++) {
+      row.push(' ')
+    }
+
+    seaMap.push(row)
+  }
+
+  return seaMap
+}
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -61,13 +68,16 @@ const SeaMapSetup = () => {
    * @note Ship ghost is a special visual entity which appears when you perform the 
    * drag
    */
-  const addShipGhost = (p5: p5types, boxesCount: number): void => {
+  const addShipGhost = (p5: p5types, shipGhostConfig: ShipGhost): void => {
     const { mouseX, mouseY } = p5
+    const { boxesCount, xOffset, yOffset } = shipGhostConfig
 
     setShipGhost({
       boxesCount: boxesCount,
       xCoord: mouseX,
-      yCoord: mouseY
+      yCoord: mouseY,
+      xOffset: xOffset,
+      yOffset: yOffset
     })
   }
 
@@ -78,7 +88,7 @@ const SeaMapSetup = () => {
    * @returns false if not or number of boxes of the ship which the user clicked 
    * at
    */
-  const identifyDraggableEntity = (p5: p5types): false | number => {
+  const identifyDraggableEntity = (p5: p5types): false | ShipGhost => {
     const { mouseX, mouseY } = p5
     const maxShipBoxesCount = 4
 
@@ -93,7 +103,13 @@ const SeaMapSetup = () => {
           shipsListXCoord + (CELL_DIMENSION * (maxShipBoxesCount - i))
         if (mouseY >= elementStartYCoord && mouseY <= elementEndYCoord &&
           mouseX <= elementEndXCoord) {
-          return maxShipBoxesCount - i
+          return {
+            boxesCount: maxShipBoxesCount - i,
+            xOffset: mouseX - shipsListXCoord,
+            yOffset: mouseY - elementEndYCoord,
+            xCoord: mouseX,
+            yCoord: mouseY
+          }
         }
       }
     }
@@ -120,7 +136,7 @@ const SeaMapSetup = () => {
       return
     }
 
-    addShipGhost(p5, shipGhost.boxesCount)
+    addShipGhost(p5, shipGhost)
   }
 
   const setup = ((p5: p5types, canvasParentRef: Element) => {
@@ -185,10 +201,26 @@ const SeaMapSetup = () => {
       )
 
     if (shipGhost) {
-      const { xCoord, yCoord, boxesCount } = shipGhost
-      drawShip(p5, xCoord, yCoord, boxesCount, false, '#f45cff')
+      const { 
+        xCoord, 
+        yCoord, 
+        xOffset, 
+        yOffset, 
+        boxesCount 
+      } = shipGhost
+
+      drawShip(
+        p5, 
+        xCoord - xOffset, 
+        yCoord - yOffset - CELL_DIMENSION, 
+        boxesCount, 
+        false, 
+        '#f45cff'
+      )
     }
   };
+
+  getInitialSeaMapAsArray()
 
   return (
     <div className={classes.seaMap}>

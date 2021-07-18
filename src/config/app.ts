@@ -3,7 +3,7 @@ const CONFIG = {
   DRAWING: {
     CELL_DIMENSION: 45,
     MAP_DIMENSION: 10,
-    FRAME_RATE: 15
+    FRAME_RATE: 50
   }
 }
 
