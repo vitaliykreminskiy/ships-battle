@@ -3,12 +3,14 @@ import p5Types from 'p5'
 import CONFIG from '../config/app'
 
 const {
-  CELL_DIMENSION,
-  MAP_DIMENSION
-} = CONFIG.DRAWING
+  DRAWING: {
+    CELL_DIMENSION,
+    MAP_DIMENSION
+  },
+  TOP_LETTERS
+} = CONFIG
 
 export const drawSeaMap = (p5: p5Types) => {
-  const topLetters = ' ABCDEFGHKL'
   const mapWidth = CELL_DIMENSION * (MAP_DIMENSION + 1)
 
   //Drawing lines, horizontal and then vertical
@@ -27,7 +29,7 @@ export const drawSeaMap = (p5: p5Types) => {
     p5.textAlign(p5.CENTER)
       .textSize(CELL_DIMENSION / 2)
       .fill(43, 177, 255)
-      .text(topLetters[i], CELL_DIMENSION * i, CELL_DIMENSION / 4, CELL_DIMENSION, CELL_DIMENSION)
+      .text(TOP_LETTERS[i], CELL_DIMENSION * i, CELL_DIMENSION / 4, CELL_DIMENSION, CELL_DIMENSION)
   }
 
   for (let i = 1; i <= MAP_DIMENSION + 1; i++) {

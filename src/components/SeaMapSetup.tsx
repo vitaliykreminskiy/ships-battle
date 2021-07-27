@@ -9,21 +9,27 @@ import {
 
 import { drawSeaMap, drawShip } from '../utils/drawing'
 import CONFIG from '../config/app'
-import { 
-  SeaMapType, 
-  ShipGhost, 
-  ShipsCounts 
+import {
+  Coordinate,
+  SeaMapType,
+  ShipGhost,
+  ShipsCounts
 } from '../types'
+import { useSeaMap } from '../hooks/useSeaMap'
+import SeaMap from './SeaMap'
 
 const {
-  FRAME_RATE,
-  CELL_DIMENSION,
-  MAP_DIMENSION
-} = CONFIG.DRAWING
+  DRAWING: {
+    FRAME_RATE,
+    CELL_DIMENSION,
+    MAP_DIMENSION
+  },
+  TOP_LETTERS
+} = CONFIG
 
 const getInitialSeaMapAsArray = (): SeaMapType => {
   let seaMap = []
-  
+
   for (let i = 0; i < MAP_DIMENSION; i++) {
     const row = []
     for (let j = 0; j < MAP_DIMENSION; j++) {
@@ -44,24 +50,50 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
+const isMouseInDroppableArea = (p5: p5types) => {
+  const fieldStartCoord = CELL_DIMENSION
+  const fieldEndCoord = CELL_DIMENSION + (CELL_DIMENSION * 10)
+
+  return (fieldStartCoord <= p5.mouseX && fieldEndCoord >= p5.mouseX)
+    && (fieldStartCoord <= p5.mouseY && fieldEndCoord >= p5.mouseY)
+}
+
+const getFieldCoordsByMouseCoords = (p5: p5types): Coordinate | false => {
+  if (!isMouseInDroppableArea(p5)) {
+    return false
+  }
+
+  const coordX = Math.floor(p5.mouseX / CELL_DIMENSION)
+  const coordY = Math.floor(p5.mouseY / CELL_DIMENSION)
+
+  return {
+    x: coordX,
+    y: coordY,
+    number: coordY,
+    letter: TOP_LETTERS[coordX]
+  }
+}
+
 const SeaMapSetup = () => {
   const classes = useStyles()
+  const initialSeaMap = getInitialSeaMapAsArray()
   const [shipsCount, setShipsCount] = useState<ShipsCounts>({
     singles: 4,
     doubles: 3,
     triples: 2,
     fourths: 1
-  }) 
+  })
   const [shipGhost, setShipGhost] = useState<ShipGhost | false>(false)
+  const [seaMap, dispatch] = useSeaMap(initialSeaMap)
 
   const horizontalSpacingPx = 40
   const verticalSpacingPx = 40
   const mapHeight = CELL_DIMENSION * (MAP_DIMENSION + 1)
   const mapWidth = CELL_DIMENSION * (MAP_DIMENSION + 1)
-  const separatorXCoord = 
+  const separatorXCoord =
     (CELL_DIMENSION * (MAP_DIMENSION + 1)) + horizontalSpacingPx
   const shipsListXCoord = separatorXCoord + horizontalSpacingPx
-  const shipsCountsXCoord = 
+  const shipsCountsXCoord =
     shipsListXCoord + (CELL_DIMENSION * 4) + (horizontalSpacingPx * 2)
 
   /**
@@ -96,10 +128,10 @@ const SeaMapSetup = () => {
     // That means that we've clicked somewhere into ShipsList area
     if (mouseX > shipsListXCoord && mouseY > CELL_DIMENSION) {
       for (let i = 0; i <= maxShipBoxesCount; i++) {
-        const elementStartYCoord = 
+        const elementStartYCoord =
           CELL_DIMENSION + (CELL_DIMENSION * i) + (verticalSpacingPx * i)
         const elementEndYCoord = elementStartYCoord + CELL_DIMENSION
-        const elementEndXCoord = 
+        const elementEndXCoord =
           shipsListXCoord + (CELL_DIMENSION * (maxShipBoxesCount - i))
         if (mouseY >= elementStartYCoord && mouseY <= elementEndYCoord &&
           mouseX <= elementEndXCoord) {
@@ -115,7 +147,7 @@ const SeaMapSetup = () => {
     }
 
     return false
-  } 
+  }
 
   const handleMousePressed = (p5: p5types): void => {
     const targetDraggableEntity = identifyDraggableEntity(p5)
@@ -128,6 +160,12 @@ const SeaMapSetup = () => {
   }
 
   const handleMouseReleased = (p5: p5types): void => {
+    if (!shipGhost) {
+      return
+    }
+
+    // TODO: On mouse release we need to place a ship into a map
+
     setShipGhost(false)
   }
 
@@ -154,9 +192,9 @@ const SeaMapSetup = () => {
     // Separator line
     p5.stroke(255, 23, 68)
     p5.line(
-      separatorXCoord, 
-      CELL_DIMENSION, 
-      separatorXCoord, 
+      separatorXCoord,
+      CELL_DIMENSION,
+      separatorXCoord,
       CELL_DIMENSION * (MAP_DIMENSION + 1)
     )
     p5.stroke(43, 177, 255)
@@ -164,15 +202,15 @@ const SeaMapSetup = () => {
     drawShip(p5, shipsListXCoord, CELL_DIMENSION, 4)
     drawShip(p5, shipsListXCoord, (CELL_DIMENSION * 2) + verticalSpacingPx, 3)
     drawShip(
-      p5, 
-      shipsListXCoord, 
-      (CELL_DIMENSION * 3) + (verticalSpacingPx * 2), 
+      p5,
+      shipsListXCoord,
+      (CELL_DIMENSION * 3) + (verticalSpacingPx * 2),
       2
     )
     drawShip(
-      p5, 
-      shipsListXCoord, 
-      (CELL_DIMENSION * 4) + (verticalSpacingPx * 3), 
+      p5,
+      shipsListXCoord,
+      (CELL_DIMENSION * 4) + (verticalSpacingPx * 3),
       1
     )
 
@@ -181,41 +219,42 @@ const SeaMapSetup = () => {
       .stroke(43, 177, 255)
       .text(
         `x ${shipsCount.fourths}`,
-        shipsCountsXCoord, 
+        shipsCountsXCoord,
         (CELL_DIMENSION * 2) - (CELL_DIMENSION / 3)
       )
       .text(
         `x ${shipsCount.triples}`,
-        shipsCountsXCoord, 
+        shipsCountsXCoord,
         (CELL_DIMENSION * 3) + verticalSpacingPx - (CELL_DIMENSION / 3)
       )
       .text(
         `x ${shipsCount.doubles}`,
-        shipsCountsXCoord, 
+        shipsCountsXCoord,
         (CELL_DIMENSION * 4) + (verticalSpacingPx * 2) - (CELL_DIMENSION / 3)
       )
       .text(
         `x ${shipsCount.singles}`,
-        shipsCountsXCoord, 
+        shipsCountsXCoord,
         (CELL_DIMENSION * 5) + (verticalSpacingPx * 3) - (CELL_DIMENSION / 3)
       )
 
     if (shipGhost) {
-      const { 
-        xCoord, 
-        yCoord, 
-        xOffset, 
-        yOffset, 
-        boxesCount 
+      const isInDroppableArea = isMouseInDroppableArea(p5)
+      const {
+        xCoord,
+        yCoord,
+        xOffset,
+        yOffset,
+        boxesCount
       } = shipGhost
 
       drawShip(
-        p5, 
-        xCoord - xOffset, 
-        yCoord - yOffset - CELL_DIMENSION, 
-        boxesCount, 
-        false, 
-        '#f45cff'
+        p5,
+        xCoord - xOffset,
+        yCoord - yOffset - CELL_DIMENSION,
+        boxesCount,
+        false,
+        isInDroppableArea ? '#00eb04' : '#ff3014'
       )
     }
   };
@@ -224,9 +263,9 @@ const SeaMapSetup = () => {
 
   return (
     <div className={classes.seaMap}>
-      <Sketch 
-        setup={setup} 
-        draw={draw} 
+      <Sketch
+        setup={setup}
+        draw={draw}
         mouseDragged={handleMouseDrag}
         mousePressed={handleMousePressed}
         mouseReleased={handleMouseReleased}

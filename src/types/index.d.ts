@@ -10,7 +10,14 @@ export type ShipGhost = {
   xCoord: number,
   yCoord: number,
   xOffset: number,
-  yOffset: number
+  yOffset: number,
+}
+
+export type Coordinate = {
+  x: number,
+  y: number,
+  letter?: string,
+  number?: number
 }
 
 /**

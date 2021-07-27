@@ -7,6 +7,8 @@ import {
   Theme
 } from '@material-ui/core'
 
+import CONFIG from '../config/app'
+
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     seaMap: {
@@ -15,7 +17,7 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-const topLetters = ' ABCDEFGHKL'
+const { TOP_LETTERS } = CONFIG
 
 //TODO: Bring out this config to separate object
 const frameRate = 10
@@ -49,7 +51,7 @@ const setup = ((p5: p5types, canvasParentRef: Element) => {
     p5.textAlign(p5.CENTER)
       .textSize(cellHeight / 2)
       .fill(43, 177, 255)
-      .text(topLetters[i], cellWidth * i, cellHeight / 4, cellWidth, cellHeight)
+      .text(TOP_LETTERS[i], cellWidth * i, cellHeight / 4, cellWidth, cellHeight)
   }
 
   for (let i = 1; i <= mapDimension + 1; i++) {
